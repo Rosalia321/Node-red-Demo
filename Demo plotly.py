@@ -51,7 +51,8 @@ def update_plot(selected_parameter):
 
     if selected_parameter == 'EstadoTexto':
         # Create a pie chart
-        fig = px.pie(Datos_filtrados, names='EstadoTexto', values=selected_parameter, title=f'{selected_parameter} Distribution')
+        #fig = px.pie(Datos_filtrados, names='EstadoTexto', values=Datos_filtrados, title=f'{selected_parameter} Distribution')
+        print(Datos_filtrados)
 
     else:
         # Create the plot with the selected parameter
