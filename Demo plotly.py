@@ -35,12 +35,12 @@ app.layout = html.Div([
         value=parameters[0],  # Default value
         clearable=False,
     ),
-    dcc.Graph(id='line-plot'),
+    dcc.Graph(id='graph'),
 ])
 
 # Callback to update the line plot
 @app.callback(
-    Output('line-plot', 'figure'),
+    Output('graph', 'figure'),
     Input('parameter-dropdown', 'value')
 )
 def update_plot(selected_parameter):
@@ -51,8 +51,11 @@ def update_plot(selected_parameter):
 
     if selected_parameter == 'EstadoTexto':
         # Create a pie chart
-        #fig = px.pie(Datos_filtrados, names='EstadoTexto', values=Datos_filtrados, title=f'{selected_parameter} Distribution')
-        print(Datos_filtrados)
+        Estado_data = Datos_filtrados[selected_parameter].value_counts().reset_index()
+        Estado_data.columns = ['EstadoTexto','cuenta']
+
+        fig = px.pie(Estado_data, names='EstadoTexto', values='cuenta', title=f'{selected_parameter} Distribution')
+        
 
     else:
         # Create the plot with the selected parameter
@@ -75,7 +78,7 @@ def update_plot(selected_parameter):
                 showgrid=True
             )
         )
-        return fig
+    return fig
 
 # Run the app
 if __name__ == '__main__':
