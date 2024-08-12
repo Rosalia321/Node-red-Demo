@@ -6,26 +6,43 @@ import plotly.graph_objects as go
 from ipywidgets import widgets
 import plotly.express as px
 from dash import Dash, dcc, html, Input, Output
-
-data = pd.read_csv('Linea Bob_DashboardData_20240701-030000000_20240729-030000000.csv',sep=';')
-
-def parse_datetime(dt_str):
-    return parser.parse(dt_str)
-
-data['_time'] = data['_time'].apply(parse_datetime)
-
-
-data['year'] = data['_time'].dt.year
-data['day'] = data['_time'].dt.day
-data['hour'] = data['_time'].dt.hour
-data['minuto'] = data['_time'].dt.minute
-
-data['day_hour_minute_second'] = data['_time'].dt.strftime('%Y-%m-%d %H:%M')
-
-parameters = ['CantMinutosParadaTotales', 'OEE','Calidad','EstadoTexto']
+from flask import request
+import io
 
 # Initialize the Dash app
 app = Dash(__name__)
+
+# Global variable to store the data
+data = pd.DataFrame()
+
+# Endpoint to receive CSV data from Node-RED
+@app.server.route('/upload-csv', methods=['POST'])
+
+def upload_csv():
+
+    global data
+    # Read the CSV file from the POST request
+    csv_file = io.StringIO(request.data.decode('utf-8'))
+    # Convert to DataFrame
+    data = pd.read_csv(csv_file)
+
+    #def parse_datetime(dt_str):
+        #return parser.parse(dt_str)
+
+    #data['_time'] = data['_time'].apply(parse_datetime)
+
+    data['_time'] = pd.to_datetime(data['_time'])
+
+    data['year'] = data['_time'].dt.year
+    data['day'] = data['_time'].dt.day
+    data['hour'] = data['_time'].dt.hour
+    data['minuto'] = data['_time'].dt.minute
+
+    data['day_hour_minute_second'] = data['_time'].dt.strftime('%Y-%m-%d %H:%M')
+
+    return "CSV uploaded successfully!", 200
+
+parameters = ['CantMinutosParadaTotales', 'OEE','Calidad','EstadoTexto']
 
 # Layout of the app
 app.layout = html.Div([
@@ -36,6 +53,11 @@ app.layout = html.Div([
         clearable=False,
     ),
     dcc.Graph(id='graph'),
+    dcc.Interval(
+        id='interval-component',
+        interval=5*1000,  # Update every 5 seconds
+        n_intervals=0
+    ),
 ])
 
 # Callback to update the line plot
@@ -43,8 +65,12 @@ app.layout = html.Div([
     Output('graph', 'figure'),
     Input('parameter-dropdown', 'value')
 )
+   
 def update_plot(selected_parameter):
 
+    if data.empty:
+        return go.Figure()
+    
     # Fill NaN values using interpolation (or you can use other methods like forward fill)
     Datos_filtrados = data.dropna(subset=[selected_parameter])
 
@@ -82,4 +108,4 @@ def update_plot(selected_parameter):
 
 # Run the app
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=True, port=8050)
